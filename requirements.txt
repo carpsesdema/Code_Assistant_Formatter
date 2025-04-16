@@ -1,0 +1,4 @@
+# requirements.txt
+
+PyQt6>=6.4.0,<6.7  # For the GUI framework
+ruff>=0.1.0       # For code formatting
