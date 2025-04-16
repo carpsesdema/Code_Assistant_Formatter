@@ -1,4 +1,3 @@
-
 """
 Main entry point for the Code Helper application.
 Sets up the QApplication and runs the main window.
@@ -8,6 +7,7 @@ Includes necessary setup for PyInstaller.
 import sys
 import multiprocessing
 
+from PyQt6.QtCore import Qt
 # --- PyQt6 Imports ---
 # Import QApplication from QtWidgets
 from PyQt6.QtWidgets import QApplication
@@ -39,8 +39,6 @@ def main():
     # PyQt6 generally handles this better, but explicit enabling can be useful.
     # Options:
     # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1" # Basic enable
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
 
 
     # Create the QApplication instance

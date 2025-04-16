@@ -1,9 +1,4 @@
 
-"""
-Contains the main application window class `SmartReplaceApp` for the Code Helper,
-including UI setup, event handling, and coordination of background tasks.
-"""
-
 import sys
 import os
 import platform
@@ -18,11 +13,11 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit,
     QLineEdit, QFileDialog, QLabel, QMessageBox, QCheckBox, QTreeView,
     QProgressBar, QSplitter, QDialog, QPlainTextEdit, QStyle, QMenu,
-    QSizePolicy, QFileSystemModel, QHeaderView
+    QSizePolicy, QHeaderView
 )
 from PyQt6.QtGui import (
     QFont, QIcon, QShortcut, QKeySequence, QFontDatabase, QAction, QDesktopServices,
-    QUndoStack, QUndoCommand # Keep imports even if not fully implemented yet
+    QUndoStack, QUndoCommand, QFileSystemModel, # Keep imports even if not fully implemented yet
 )
 from PyQt6.QtCore import (
     Qt, QTimer, QDir, QSortFilterProxyModel, QRegularExpression, QModelIndex

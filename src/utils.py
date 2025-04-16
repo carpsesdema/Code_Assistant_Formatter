@@ -1,4 +1,7 @@
-
+"""
+General utility functions for the Code Helper application.
+"""
+import shutil
 import sys
 import os
 import platform
