@@ -1,6 +1,51 @@
 import sys
 import multiprocessing
 
+# --- Add this block at the top ---
+import os
+import traceback
+import time # Import time for unique log filenames if needed
+
+# Try to determine the base directory reliably
+try:
+    frozen = getattr(sys, 'frozen', False)
+    if frozen and hasattr(sys, '_MEIPASS'):
+        # Running in a PyInstaller bundle (_MEIPASS is temp dir)
+        bundle_dir = sys._MEIPASS
+    else:
+        # Running as a normal script
+        bundle_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Define log file path in user's home directory
+    log_filename = f"code_helper_debug_{int(time.time())}.log" # Add timestamp
+    log_path = os.path.join(os.path.expanduser("~"), log_filename)
+
+    # Write debug info to the log file
+    with open(log_path, "w", encoding="utf-8") as f:
+        f.write(f"Timestamp: {time.asctime()}\n")
+        f.write(f"Running from CWD: {os.getcwd()}\n")
+        f.write(f"sys.executable: {sys.executable}\n")
+        f.write(f"sys.frozen: {frozen}\n")
+        f.write(f"sys._MEIPASS exists: {hasattr(sys, '_MEIPASS')}\n")
+        if hasattr(sys, '_MEIPASS'):
+            f.write(f"sys._MEIPASS value: {sys._MEIPASS}\n")
+        f.write(f"Bundle dir determined: {bundle_dir}\n")
+        f.write(f"os.environ['PATH']: {os.environ.get('PATH', 'Not Set')}\n")
+
+except Exception as e:
+    # Attempt to log any error during the debug logging itself
+    try:
+        # Define log_path again in case it failed before creation
+        log_path_err = os.path.join(os.path.expanduser("~"), f"code_helper_debug_ERROR_{int(time.time())}.log")
+        with open(log_path_err, "w", encoding="utf-8") as f_err:
+            f_err.write(f"Timestamp: {time.asctime()}\n")
+            f_err.write("Error during initial debug logging:\n")
+            f_err.write(traceback.format_exc())
+    except Exception:
+        pass # Ignore errors during error logging
+# --- End of debug block ---
+
+
 # --- PyQt6 Imports ---
 # Import QApplication from QtWidgets
 from PyQt6.QtWidgets import QApplication
