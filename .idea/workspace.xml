@@ -4,20 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3caab3f4-8284-4fdd-afc9-b5982e77ab47" name="Changes" comment="added lic">
+    <list default="true" id="3caab3f4-8284-4fdd-afc9-b5982e77ab47" name="Changes" comment="exe fix">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Code_Helper.ico" beforeDir="false" afterPath="$PROJECT_DIR$/Code_Helper.ico" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/JetBrainsMono-Regular.ttf" beforeDir="false" afterPath="$PROJECT_DIR$/JetBrainsMono-Regular.ttf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ast_utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/highlighters.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ruff_utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/threads.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/widgets.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,21 +41,20 @@
   &quot;associatedIndex&quot;: 1
 }</component>
   <component name="ProjectId" id="2vmvKuaaTU6AM1n7GgWYVd5tEI6" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.main.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/carps/Code_Assistant_Formatter"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/carps/Code_Assistant_Formatter&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\carps\Code_Assistant_Formatter" />
@@ -79,7 +68,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-4f4e415b4190-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.26053.29" />
+        <option value="bundled-python-sdk-348a24fa61fa-5312c7369657-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-251.23774.444" />
       </set>
     </attachedChunks>
   </component>
@@ -124,7 +113,31 @@
       <option name="project" value="LOCAL" />
       <updated>1744826951758</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Updated project structure">
+      <option name="closed" value="true" />
+      <created>1744833679192</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1744833679192</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Updated project structure">
+      <option name="closed" value="true" />
+      <created>1744833717348</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1744833717348</updated>
+    </task>
+    <task id="LOCAL-00007" summary="exe fix">
+      <option name="closed" value="true" />
+      <created>1744912833848</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1744912833848</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -142,6 +155,8 @@
     <MESSAGE value="Initial commit" />
     <MESSAGE value="Seperated mod logic" />
     <MESSAGE value="added lic" />
-    <option name="LAST_COMMIT_MESSAGE" value="added lic" />
+    <MESSAGE value="Updated project structure" />
+    <MESSAGE value="exe fix" />
+    <option name="LAST_COMMIT_MESSAGE" value="exe fix" />
   </component>
 </project>

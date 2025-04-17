@@ -5,7 +5,6 @@ import multiprocessing
 # Import QApplication from QtWidgets
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt # Keep this if you use Qt flags directly here
-
 # --- Project Module Imports (Direct Imports for Flat Structure) ---
 from app import SmartReplaceApp
 from constants import APP_NAME, ORG_NAME, APP_VERSION

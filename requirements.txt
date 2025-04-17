@@ -1,4 +1,4 @@
-PyQt6>=6.4.0,<6.7  # Or your specific version range
-ruff>=0.1.0       # Or your specific version range
-PyYAML>=6.0       # Added if you use YAML config later (needed for constants.py STYLE_SHEET if loaded from YAML)
-python-dotenv>=0.20.0 # Added if you use .env files later
+PyQt6 # Or your specific version range
+ruff     # Or your specific version range
+PyYAML       # Added if you use YAML config later (needed for constants.py STYLE_SHEET if loaded from YAML)
+python-dotenv # Added if you use .env files later
