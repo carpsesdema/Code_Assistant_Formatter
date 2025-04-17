@@ -1,17 +1,10 @@
-
-"""
-Main entry point for the Code Helper application.
-Sets up the QApplication and runs the main window.
-Includes necessary setup for PyInstaller.
-"""
-
 import sys
 import multiprocessing
 
-from PyQt6.QtCore import Qt
 # --- PyQt6 Imports ---
 # Import QApplication from QtWidgets
 from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import Qt # Keep this if you use Qt flags directly here
 
 # --- Project Module Imports (Direct Imports for Flat Structure) ---
 from app import SmartReplaceApp
@@ -20,11 +13,6 @@ from constants import APP_NAME, ORG_NAME, APP_VERSION
 
 def main():
     """Main function to initialize and run the application."""
-    # --- PyInstaller freeze_support ---
-    # Necessary for multiprocessing support when bundled, especially on Windows.
-    # Must be called right at the beginning of the main execution block.
-    multiprocessing.freeze_support()
-
     # --- Application Setup ---
     # Consider setting application attributes for better OS integration
     # and potential future settings persistence using QSettings.
@@ -36,8 +24,9 @@ def main():
     # High DPI scaling can be important on some systems.
     # PyQt6 generally handles this better, but explicit enabling can be useful.
     # Options:
+    # import os
     # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1" # Basic enable
-
+    # QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling) # Another option
 
     # Create the QApplication instance
     # sys.argv contains command-line arguments, passed to Qt
@@ -61,4 +50,11 @@ def main():
 # --- Standard Python Entry Point Check ---
 # This ensures the main() function is called only when the script is executed directly.
 if __name__ == "__main__":
+    # ==============================================================
+    # CRITICAL: freeze_support() MUST be the first line here!
+    # ==============================================================
+    multiprocessing.freeze_support()
+    # ==============================================================
+
+    # Now call your main application logic
     main()
