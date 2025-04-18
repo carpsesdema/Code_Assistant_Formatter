@@ -1,8 +1,7 @@
-
 import subprocess
 import sys
 import traceback
-import os # Needed for os.linesep potentially, though \n is often safer
+import os  # Needed for os.linesep and Windows console flags
 
 # Import constants from the constants module (Direct Import)
 from constants import RUFF_TIMEOUT
@@ -28,8 +27,7 @@ def _remove_trailing_semicolons(code_string: str) -> str:
         stripped_line = line.rstrip()
         # Check if the stripped line actually ends with a semicolon
         if stripped_line.endswith(';'):
-            # If it ends with a semicolon, remove the semicolon and any whitespace
-            # that might have preceded it by stripping again.
+            # If it ends with a semicolon, remove it and any trailing whitespace
             processed_lines.append(stripped_line[:-1].rstrip())
         else:
             # If it doesn't end with a semicolon, add the original line back
@@ -56,78 +54,74 @@ def format_code_with_ruff(code_string: str) -> tuple[str, str | None]:
         - An error message string if formatting failed, otherwise None.
     """
     # --- Step 1: Initial Cleanup ---
-    # Remove leading/trailing whitespace from the entire snippet.
     cleaned_input_code = code_string.strip()
 
     # --- Step 2: Preliminary Semicolon Removal ---
-    # Run the custom semicolon remover *before* calling Ruff.
     try:
         semicolon_cleaned_code = _remove_trailing_semicolons(cleaned_input_code)
     except Exception as cleanup_e:
-        # Catch unexpected errors during the custom cleanup phase
         error_message = f"Error during preliminary semicolon removal: {cleanup_e}"
         print(error_message)
         traceback.print_exc()
-        # Return the result of the initial strip() and the error
         return cleaned_input_code, error_message
 
-    # Initialize final return values, default to the semicolon-cleaned code if Ruff fails
+    # Initialize defaults
     final_code = semicolon_cleaned_code
     error_message = None
 
     try:
         # --- Step 3: Run Ruff Formatter ---
-        # Construct the command using sys.executable
         command = [sys.executable, "-m", "ruff", "format", "-"]
 
-        # Run Ruff as a subprocess, passing the semicolon-cleaned code
+        # On Windows, prevent a new console window from popping up
+        startupinfo = None
+        creationflags = 0
+        if os.name == "nt":
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            creationflags = subprocess.CREATE_NO_WINDOW
+
         process = subprocess.run(
             command,
-            input=semicolon_cleaned_code, # Pass the semicolon-cleaned code as input
-            capture_output=True,        # Capture stdout and stderr
-            text=True,                  # Decode output as text
-            check=False,                # Check return code manually
-            encoding="utf-8",           # Specify UTF-8 encoding
-            timeout=RUFF_TIMEOUT        # Set a timeout
+            input=semicolon_cleaned_code,
+            capture_output=True,
+            text=True,
+            check=False,
+            encoding="utf-8",
+            timeout=RUFF_TIMEOUT,
+            startupinfo=startupinfo,
+            creationflags=creationflags,
         )
 
-        # Check Ruff's exit code
+        # Check exit code
         if process.returncode != 0:
-            # Ruff formatting failed
             stderr_output = process.stderr.strip() if process.stderr else "No stderr output."
             error_message = f"Ruff formatting failed (exit code {process.returncode}):\n{stderr_output}"
-            print(error_message) # Log the error
-            # Return the semicolon-cleaned code (as Ruff failed on it) and the error message
+            print(error_message)
             return semicolon_cleaned_code, error_message
 
-        # Check stderr even on success (might contain warnings)
+        # On warnings in stderr, we log but don't treat as failure
         if process.stderr and process.stderr.strip():
-            # Log warnings from stderr but don't treat as failure
             print(f"Ruff formatting warnings:\n{process.stderr.strip()}")
 
-        # If Ruff was successful, get the final formatted code from stdout
         final_code = process.stdout
-        error_message = None # Explicitly set error message to None on success
+        error_message = None
 
     except subprocess.TimeoutExpired:
         error_message = f"Ruff formatting timed out after {RUFF_TIMEOUT} seconds."
         print(error_message)
-        # Return the semicolon-cleaned code and timeout error message
         return semicolon_cleaned_code, error_message
     except FileNotFoundError:
-        # This typically means 'python -m ruff' could not be run.
-        error_message = (f"Ruff command failed. Is ruff installed in the Python environment "
-                         f"located at '{sys.executable}' and accessible in the system PATH?")
+        error_message = (
+            f"Ruff command failed. Is ruff installed in the Python environment "
+            f"located at '{sys.executable}' and accessible in the system PATH?"
+        )
         print(error_message)
-        # Return the semicolon-cleaned code and the error message
         return semicolon_cleaned_code, error_message
     except Exception as e:
-        # Catch any other unexpected errors during subprocess execution
         error_message = f"An unexpected error occurred while running ruff: {e}"
         print(error_message)
-        traceback.print_exc() # Print full traceback for debugging
-        # Return the semicolon-cleaned code and the error message
+        traceback.print_exc()
         return semicolon_cleaned_code, error_message
 
-    # Return the fully formatted code (semicolon clean -> Ruff format) and no error message
     return final_code, error_message
