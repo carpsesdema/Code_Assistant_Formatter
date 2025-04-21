@@ -7,8 +7,9 @@ import traceback
 from pathlib import Path
 from PyQt6.QtCore import QThread, pyqtSignal
 
-# Import the ruff formatting function and utility functions (Direct Imports)
-from ruff_utils import format_code_with_ruff
+# --- CHANGED IMPORT ---
+from formatter_utils import preprocess_and_format_with_black # Use the new formatter utility
+# --- END CHANGE ---
 from utils import backup_and_redo, safe_write_file
 
 # --- File Scanning Thread ---
@@ -123,7 +124,7 @@ class FileLoaderThread(QThread):
 # --- File Processing (Replace/Format) Thread ---
 class ReplacementThread(QThread):
     """
-    Processes a list of files: applies find/replace (optional) and Ruff formatting.
+    Processes a list of files: applies find/replace (optional) and Black formatting.
 
     Signals:
         progress (int, str): Emitted during processing. Provides percentage complete
@@ -181,7 +182,7 @@ class ReplacementThread(QThread):
             original_content = None
             read_error = None
             replacement_error = None
-            format_error = None
+            format_error = None # Keep variable name, now represents Black error
             write_error = None
             backup_redo_error = None
             content_changed = False
@@ -229,21 +230,24 @@ class ReplacementThread(QThread):
                      modified_content = original_content # Revert to original
 
 
-            # --- 3. Format Code (using Ruff) ---
+            # --- 3. Preprocess and Format Code (using Black) ---
             # Format the content *after* potential find/replace
             try:
-                 # Use the utility which now includes pre-cleaning
-                 formatted_content, format_error_msg = format_code_with_ruff(modified_content)
+                 # --- CHANGED: Use the new utility function ---
+                 # It handles cleaning, normalization, and Black formatting
+                 processed_content, format_error_msg = preprocess_and_format_with_black(modified_content)
+                 # --- END CHANGE ---
+
                  if format_error_msg:
-                     # Append format error to log, but keep the modified content (which was pre-cleaned)
-                     format_error = f"Ruff formatting failed: {format_error_msg}"
+                     # Append format error to log, but keep the preprocessed content
+                     format_error = f"Preprocessing/Black formatting failed: {format_error_msg}" # Updated error description
                      log_msg += f"\n[Format Warning] {file_name}: {format_error}" if log_msg else f"[Format Warning] {file_name}: {format_error}"
                      self.error_occurred.emit(f"[Format Warning] {file_name}: {format_error}")
-                     # Use the content as it was *before* trying Ruff (but after replacement and pre-cleaning)
-                     final_content_to_write = formatted_content # The format_code_with_ruff returns the pre-cleaned state on failure
+                     # Use the content as it was after preprocessing but *before* Black failure
+                     final_content_to_write = processed_content # The function returns the pre-Black state on failure
                  else:
                      # Formatting succeeded
-                     final_content_to_write = formatted_content
+                     final_content_to_write = processed_content
             except Exception as e: # Catch unexpected errors during format phase
                  format_error = f"Unexpected error during formatting: {e}"
                  log_msg += f"\n[Unexpected Format Error] {file_name}: {format_error}" if log_msg else f"[Unexpected Format Error] {file_name}: {format_error}"
@@ -387,4 +391,3 @@ class ReplacementThread(QThread):
             error = f"Unexpected error during replacement: {e}"
             traceback.print_exc()
         return modified_content, error
-# --- END OF FILE threads.txt ---

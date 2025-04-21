@@ -51,7 +51,7 @@ except Exception as e:
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt # Keep this if you use Qt flags directly here
 # --- Project Module Imports (Direct Imports for Flat Structure) ---
-from app import SmartReplaceApp
+from app import App
 from constants import APP_NAME, ORG_NAME, APP_VERSION
 # from utils import resource_path # Import if needed directly here
 
@@ -83,7 +83,7 @@ def main():
 
     # --- Create and Show Main Window ---
     # Instantiate the main application window from app.py
-    window = SmartReplaceApp()
+    window = App()
     window.show() # Display the window
 
     # --- Start Event Loop ---

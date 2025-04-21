@@ -1,259 +1,280 @@
+# --- utils.py ---
 
-import shutil
 import sys
 import os
 import platform
 import subprocess
+import shutil
 import traceback
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMessageBox # For copy_to_clipboard & open_folder
+from PyQt6.QtWidgets import QApplication, QMessageBox # Added QMessageBox for error display
 
-# No changes needed to constants import here
+# --- ADDED: Import constant for backup dir ---
+from constants import CODE_HELPER_BACKUP_DIR_NAME
 
+# --- Resource Path Handling (For PyInstaller Bundles) ---
 def resource_path(relative_path: str) -> str:
-    """
-    Get absolute path to resource, works for dev and for PyInstaller bundles.
-
-    Args:
-        relative_path: The relative path to the resource file (e.g., "icon.ico").
-
-    Returns:
-        The absolute path to the resource.
-    """
+    """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS (for --onefile)
-        if hasattr(sys, '_MEIPASS'):
-            # This is the path to the extracted files in the temp folder
-            base_path = sys._MEIPASS
-        # Check if running as a bundled executable (covers --onedir)
-        # elif getattr(sys, 'frozen', False): # This condition might be redundant with _MEIPASS for --onefile
-        #      base_path = os.path.dirname(sys.executable)
-        else:
-             # Not frozen, running from source.
-             # Base path is directory containing *this* script file (__file__).
-             # Since all scripts are now in the root, this should be the project root.
-             base_path = os.path.dirname(os.path.abspath(__file__))
-             # If __file__ isn't reliable, fallback to current working directory might be needed
-             # base_path = os.path.abspath(".")
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+        # Ensure base_path is a string (it should be, but helps type checkers)
+        base_path_str = str(base_path)
+    except Exception:
+        # _MEIPASS not defined, so running in development mode
+        # Assume the resource is in the same directory as this script
+        # Use Path(__file__).parent for robustness
+        base_path_str = str(Path(__file__).parent)
 
-    except Exception as e:
-         print(f"Warning: Error determining base path in resource_path: {e}")
-         base_path = os.path.abspath(".") # Use current working directory as last resort
+    # Join the base path and the relative path using os.path.join
+    # This handles path separators correctly across OSes
+    return os.path.join(base_path_str, relative_path)
 
-    final_path = os.path.join(base_path, relative_path)
-    # print(f"Resource path resolved: '{relative_path}' -> '{final_path}' (Base: '{base_path}')") # Optional Debug print
-    return os.path.normpath(final_path)
 
-def open_containing_folder(folder_path: Path) -> tuple[bool, str | None]:
-    """
-    Opens the specified folder path in the system's file explorer.
-
-    Args:
-        folder_path: A Path object representing the folder to open.
-
-    Returns:
-        A tuple (success: bool, error_message: str | None).
-    """
-    folder_path_str = str(folder_path)
-    if not folder_path.is_dir(): # Check if it exists and is a directory
-        error_msg = f"Cannot open folder, path is not a valid directory: {folder_path_str}"
-        print(error_msg)
-        return False, error_msg
+# --- File/Folder Operations ---
+def open_containing_folder(path_obj: Path) -> tuple[bool, str | None]:
+    """Opens the directory containing the given file or directory path."""
+    if not path_obj.exists():
+        return False, f"Path does not exist: {path_obj}"
+    if not path_obj.is_dir(): # If it's a file, get its parent directory
+        target_dir = path_obj.parent
+    else: # It's already a directory
+        target_dir = path_obj
 
     try:
-        print(f"Attempting to open folder: {folder_path_str}") # Debug
+        # Convert Path object to string for OS compatibility
+        target_dir_str = str(target_dir.resolve()) # Use resolve() for absolute path
+
         system = platform.system()
         if system == "Windows":
-            # os.startfile is generally reliable for opening folders on Windows
-            os.startfile(folder_path_str)
+            # Use os.startfile on Windows for more robust opening
+            os.startfile(target_dir_str)
+            return True, None
         elif system == "Darwin": # macOS
-            subprocess.run(["open", folder_path_str], check=True)
+            subprocess.run(["open", target_dir_str], check=True)
+            return True, None
         else: # Linux and other Unix-like
-            subprocess.run(["xdg-open", folder_path_str], check=True)
-        print(f"Opened folder: {folder_path_str}")
-        return True, None
-    except FileNotFoundError:
-        # Handle case where the command (open, xdg-open) isn't found
-        error_msg = f"File explorer command not found for '{system}'. Cannot open folder."
-        print(error_msg)
-        return False, error_msg
+            subprocess.run(["xdg-open", target_dir_str], check=True)
+            return True, None
+    except FileNotFoundError as e:
+        # Handle cases where 'open' or 'xdg-open' might not be found
+        return False, f"Could not find command to open folder: {e}"
+    except PermissionError as e:
+        return False, f"Permission denied opening folder: {e}"
     except subprocess.CalledProcessError as e:
-        # Handle errors reported by the command itself
-        error_msg = f"Command failed to open folder '{folder_path_str}': {e}"
-        print(error_msg)
-        return False, error_msg
+        # Handle errors from the subprocess command itself
+        return False, f"Failed to open folder (process error): {e}"
     except Exception as e:
-        # Catch-all for other potential issues
-        error_msg = f"An unexpected error occurred trying to open folder '{folder_path_str}': {e}"
-        print(error_msg)
-        traceback.print_exc()
-        return False, error_msg
+        # Catch any other unexpected errors
+        return False, f"An unexpected error occurred opening folder: {e}"
+
 
 def copy_to_clipboard(text: str) -> tuple[bool, str | None]:
-    """
-    Copies the given text to the system clipboard using QApplication.
-
-    Args:
-        text: The string to copy.
-
-    Returns:
-        A tuple (success: bool, error_message: str | None).
-    """
+    """Copies the given text to the system clipboard."""
     try:
         clipboard = QApplication.clipboard()
         if clipboard is None:
-            # This might happen if QApplication instance doesn't exist,
-            # although unlikely when called from within the app.
-            raise RuntimeError("Could not access clipboard (QApplication instance needed).")
+            # This can happen in environments without a GUI session (e.g., some CI/CD)
+            return False, "Clipboard service not available."
         clipboard.setText(text)
-        print(f"Copied to clipboard: '{text[:50]}...'")
         return True, None
     except Exception as e:
-        error_msg = f"Failed to copy to clipboard: {e}"
-        print(error_msg)
-        traceback.print_exc()
-        return False, error_msg
+        return False, f"Failed to copy to clipboard: {e}"
 
+
+# --- File I/O Safety ---
 def safe_read_file(file_path: Path) -> tuple[str | None, str | None]:
-    """
-    Reads a file, trying UTF-8 then fallback encoding, handling errors.
-
-    Args:
-        file_path: Path object for the file.
-
-    Returns:
-        tuple: (content: str | None, error_message: str | None)
-               Content is None if reading fails.
-    """
+    """Reads file content safely, handling potential errors."""
     content = None
-    error_message = None
+    error = None
     try:
         if not file_path.is_file():
             raise FileNotFoundError(f"File not found: {file_path}")
         if not os.access(str(file_path), os.R_OK):
-             raise PermissionError(f"Permission denied reading file: {file_path.name}")
+            raise PermissionError(f"Permission denied reading file: {file_path.name}")
 
         try:
             content = file_path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            warning_msg = f"Warning: {file_path.name} is not UTF-8 encoded. Attempting fallback."
-            print(warning_msg)
-            # Log this warning somewhere accessible if needed (e.g., app log area)
+            print(f"Warning: Non UTF-8 file {file_path.name}. Trying fallback encoding.")
             try:
-                # Try default system encoding (use with caution)
-                content = file_path.read_text(encoding=None)
+                content = file_path.read_text(encoding=None) # System default
             except Exception as fallback_e:
-                # Raise the original decode error but add context
-                raise UnicodeDecodeError("utf-8", b'', 0, 0, f"File not UTF-8 and fallback failed: {fallback_e}") from fallback_e
+                raise UnicodeDecodeError("utf-8", b'', 0, 0, f"Not UTF-8 and fallback failed: {fallback_e}") from fallback_e
 
     except (FileNotFoundError, PermissionError, UnicodeDecodeError) as e:
-        error_message = f"Error reading {file_path.name}: {e}"
-        print(error_message)
+        error = str(e)
     except Exception as e:
-        error_message = f"Unexpected error loading {file_path.name}: {e}"
-        print(error_message)
+        error = f"Unexpected read error for {file_path.name}: {e}"
+        print(error) # Log unexpected errors
         traceback.print_exc()
+    return content, error
 
-    return content, error_message
 
 def safe_write_file(file_path: Path, content: str) -> tuple[bool, str | None]:
-    """
-    Writes content to a file using UTF-8 encoding, handling errors.
-
-    Args:
-        file_path: Path object for the file.
-        content: The string content to write.
-
-    Returns:
-        tuple: (success: bool, error_message: str | None)
-    """
-    error_message = None
+    """Writes content to a file safely, handling potential errors."""
+    error = None
     success = False
     try:
+        # Check if directory exists and is writable before attempting write
         parent_dir = file_path.parent
-        # Check permissions before writing
-        can_write_target = (file_path.exists() and os.access(str(file_path), os.W_OK)) or \
-                           (not file_path.exists() and os.access(str(parent_dir), os.W_OK))
-
-        if not can_write_target:
-            perm_issue = f"writing to file {file_path.name}" if file_path.exists() else f"writing to directory {parent_dir}"
-            raise PermissionError(f"Permission denied {perm_issue}")
+        if not parent_dir.exists():
+            raise FileNotFoundError(f"Parent directory does not exist: {parent_dir}")
+        if not os.access(str(parent_dir), os.W_OK):
+            raise PermissionError(f"Permission denied writing to directory: {parent_dir}")
+        # Check if file exists and is writable (if it exists)
+        if file_path.exists() and not os.access(str(file_path), os.W_OK):
+             raise PermissionError(f"Permission denied writing to file: {file_path.name}")
 
         file_path.write_text(content, encoding="utf-8")
         success = True
 
-    except PermissionError as pe:
-        error_message = f"Write Error: {pe}"
-        print(error_message)
+    except (PermissionError, FileNotFoundError, OSError) as e: # Catch common I/O errors
+        error = str(e)
     except Exception as e:
-        error_message = f"Failed to write file {file_path.name}: {e}"
-        print(error_message)
+        error = f"Unexpected write error for {file_path.name}: {e}"
+        print(error) # Log unexpected errors
         traceback.print_exc()
+    return success, error
 
-    return success, error_message
-
-
-def backup_and_redo(file_path: Path) -> tuple[bool, str | None]:
+# --- NEW FUNCTION: Get Central Backup Paths ---
+def get_central_backup_paths(original_file_path: Path) -> tuple[Path | None, Path | None, Path | None, str | None]:
     """
-    Handles creating .bak and .redo files before a modification.
+    Calculates the corresponding .bak and .redo file paths in a central backup directory.
 
-    Creates '.redo' with the current file content.
-    Creates '.bak' with the current file content ONLY if '.bak' doesn't already exist.
+    Creates the central directory and necessary subdirectories if they don't exist.
 
     Args:
-        file_path: The Path object of the file being modified.
+        original_file_path: The Path object of the original source file.
 
     Returns:
-        tuple: (success: bool, error_message: str | None)
+        A tuple containing:
+        - central_backup_dir (Path | None): The root backup directory path, or None on error.
+        - backup_path (Path | None): The full path for the .bak file, or None on error.
+        - redo_path (Path | None): The full path for the .redo file, or None on error.
+        - error_message (str | None): An error message if directory creation failed, otherwise None.
     """
+    error_message = None
+    central_backup_dir = None
+    backup_path = None
+    redo_path = None
+
     try:
-        if not file_path.exists():
-            # If the target file doesn't exist, there's nothing to back up or save for redo.
-            # This might happen if applying content to create a new file.
-            # We might want to remove potentially orphaned .bak/.redo files in this case.
-            redo_path = file_path.with_suffix(file_path.suffix + ".redo")
-            backup_path = file_path.with_suffix(file_path.suffix + ".bak")
-            if redo_path.exists(): redo_path.unlink(missing_ok=True)
-            # Decide if we want to remove the backup too. Let's keep it for now.
-            # if backup_path.exists(): backup_path.unlink(missing_ok=True)
-            print(f"Target file {file_path.name} does not exist, skipping backup/redo creation.")
-            return True, None # Considered success as there's nothing to do
+        # 1. Get User Home and Central Backup Root Directory
+        home_dir = Path.home()
+        central_backup_dir = home_dir / CODE_HELPER_BACKUP_DIR_NAME
 
-        backup_path = file_path.with_suffix(file_path.suffix + ".bak")
-        redo_path = file_path.with_suffix(file_path.suffix + ".redo")
-        parent_dir = file_path.parent
+        # 2. Construct Path Inside Backup Directory (Mirroring Original Structure)
+        # - Get parts relative to the drive/anchor
+        relative_parts = original_file_path.parts[len(original_file_path.anchor):]
 
-        # --- Check Permissions ---
-        can_read_target = os.access(str(file_path), os.R_OK)
-        can_write_dir = os.access(str(parent_dir), os.W_OK)
+        # - Handle drive letter (Windows) safely - remove colon
+        drive = original_file_path.drive
+        sanitized_drive = drive.replace(":", "") if drive else ""
 
-        if not can_read_target:
-            raise PermissionError(f"Permission denied reading file for backup/redo: {file_path.name}")
-        if not can_write_dir:
-            raise PermissionError(f"Permission denied writing backup/redo files in directory: {parent_dir}")
+        # - Combine base backup dir, sanitized drive (if any), and relative parts
+        target_base_in_backup = central_backup_dir
+        if sanitized_drive:
+            target_base_in_backup = target_base_in_backup / sanitized_drive
+        for part in relative_parts:
+            target_base_in_backup = target_base_in_backup / part
 
-        # --- Perform Operations ---
-        # 1. Save current state to redo path (overwrite existing redo if present)
-        shutil.copy2(str(file_path), redo_path) # copy2 preserves metadata
+        # 3. Define Full Backup and Redo Paths
+        backup_path = target_base_in_backup.with_suffix(target_base_in_backup.suffix + ".bak")
+        redo_path = target_base_in_backup.with_suffix(target_base_in_backup.suffix + ".redo")
 
-        # 2. Create backup only if it doesn't exist
-        if not backup_path.exists():
-            shutil.copy2(str(file_path), backup_path)
+        # 4. Ensure Destination Directory Exists in Backup Location
+        #    Create parent directories for the backup/redo files *within* the central store.
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        # redo_path.parent will be the same, so no need to call mkdir again
+
+    except PermissionError as e:
+        error_message = f"Permission denied creating backup directory structure: {e}"
+        print(error_message)
+        # Reset paths on error
+        central_backup_dir, backup_path, redo_path = None, None, None
+    except Exception as e:
+        error_message = f"Error getting/creating central backup paths: {e}"
+        print(error_message)
+        traceback.print_exc()
+        # Reset paths on error
+        central_backup_dir, backup_path, redo_path = None, None, None
+
+    return central_backup_dir, backup_path, redo_path, error_message
+
+
+# --- MODIFIED FUNCTION: Backup and Redo ---
+def backup_and_redo(original_file_path: Path) -> tuple[bool, str | None]:
+    """
+    Creates/updates backup (.bak) and redo (.redo) files for a given file
+    in a central backup location.
+
+    1. Gets the central backup paths using `get_central_backup_paths`.
+    2. If a `.redo` file exists in the central location, it's moved to `.bak` (overwriting old .bak).
+    3. The current `original_file_path` content is copied to the `.redo` file in the central location.
+
+    Args:
+        original_file_path: The Path object of the file being modified.
+
+    Returns:
+        A tuple containing:
+        - True if the operation was successful, False otherwise.
+        - An error message string if an error occurred, otherwise None.
+    """
+    # --- Step 1: Get Central Paths ---
+    central_backup_dir, backup_path, redo_path, path_err = get_central_backup_paths(original_file_path)
+    if path_err:
+        return False, f"Failed to determine backup paths: {path_err}"
+    if not backup_path or not redo_path: # Should not happen if path_err is None, but check defensively
+         return False, "Failed to determine backup paths (unknown reason)."
+
+    try:
+        # --- Step 2: Handle Existing Redo File ---
+        # Check if redo exists *in the central location*
+        if redo_path.exists():
+            # Check permissions before replacing backup
+            if backup_path.exists() and not os.access(str(backup_path), os.W_OK):
+                 raise PermissionError(f"Cannot overwrite existing central backup file: {backup_path.name}")
+            if not os.access(str(redo_path), os.R_OK):
+                 raise PermissionError(f"Cannot read existing central redo file: {redo_path.name}")
+            if not os.access(str(backup_path.parent), os.W_OK): # Check write permission for backup dir
+                 raise PermissionError(f"Cannot write to central backup directory: {backup_path.parent}")
+
+            # Move .redo to .bak (atomic replace if possible, handles overwrite)
+            # os.replace is generally preferred over shutil.move for atomic potential
+            print(f"Moving existing central redo {redo_path} to central bak {backup_path}")
+            os.replace(str(redo_path), str(backup_path))
+
+        # --- Step 3: Copy Current File to Redo ---
+        # Check permissions for the original file and the central redo location
+        if not original_file_path.exists():
+            # If the original file doesn't exist (e.g., being created), we can't create a redo state from it.
+            # This might be okay depending on the workflow, but let's log a warning.
+            print(f"Warning: Original file {original_file_path} does not exist; cannot create redo state.")
+            # We might still want to create the .bak from the .redo if it existed.
+            # Decide if this should be an error or just skip redo creation.
+            # For now, let's allow the operation to succeed if the .bak was handled.
+            return True, None # Return success, but no redo state was created.
+
+        if not os.access(str(original_file_path), os.R_OK):
+            raise PermissionError(f"Cannot read original file: {original_file_path.name}")
+        if not os.access(str(redo_path.parent), os.W_OK): # Check write permission for redo dir
+             raise PermissionError(f"Cannot write to central redo directory: {redo_path.parent}")
+
+        # Copy current original file content to the central .redo file
+        # Use copy2 to preserve metadata if desired, though maybe not critical for redo
+        print(f"Copying {original_file_path} to central redo {redo_path}")
+        shutil.copy2(str(original_file_path), str(redo_path))
 
         return True, None # Success
 
-    except PermissionError as pe:
-        error_msg = f"Backup/Redo Error: {pe}"
-        print(error_msg)
-        return False, error_msg
-    except (OSError, shutil.Error) as e:
-        error_msg = f"Backup/Redo file operation error for {file_path.name}: {e}"
+    except (PermissionError, OSError, shutil.Error) as e:
+        error_msg = f"Backup/Redo file operation failed: {e}"
         print(error_msg)
         traceback.print_exc()
         return False, error_msg
     except Exception as e:
-        error_msg = f"Unexpected error during backup/redo for {file_path.name}: {e}"
+        error_msg = f"Unexpected error during backup/redo: {e}"
         print(error_msg)
         traceback.print_exc()
         return False, error_msg
-# --- END OF FILE utils.txt ---
